@@ -87,6 +87,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ *  AFURLSessionManager 负责生成 NSURLSession 的实例，管理 AFSecurityPolicy 和 AFNetworkReachabilityManager，来保证请求的安全和查看网络连接情况，它有一个 AFJSONResponseSerializer 的实例来序列化 HTTP 响应
+ */
 @interface AFURLSessionManager : NSObject <NSURLSessionDelegate, NSURLSessionTaskDelegate, NSURLSessionDataDelegate, NSURLSessionDownloadDelegate, NSSecureCoding, NSCopying>
 
 /**

@@ -63,6 +63,9 @@
     return [self initWithBaseURL:nil sessionConfiguration:configuration];
 }
 
+/**
+ *  AFHTTPSessionManager 有着自己的 AFHTTPRequestSerializer 和 AFJSONResponseSerializer 来管理请求和响应的序列化，同时依赖父类提供的接口保证安全、监控网络状态，实现发出 HTTP 请求这一核心功能
+ */
 - (instancetype)initWithBaseURL:(NSURL *)url
            sessionConfiguration:(NSURLSessionConfiguration *)configuration
 {
@@ -78,8 +81,8 @@
 
     self.baseURL = url;
 
-    self.requestSerializer = [AFHTTPRequestSerializer serializer];
-    self.responseSerializer = [AFJSONResponseSerializer serializer];
+    self.requestSerializer = [AFHTTPRequestSerializer serializer]; // 负责序列化请求
+    self.responseSerializer = [AFJSONResponseSerializer serializer]; // 负责序列化响应
 
     return self;
 }
