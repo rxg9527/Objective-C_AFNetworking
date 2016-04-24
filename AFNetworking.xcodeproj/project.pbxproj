@@ -110,10 +110,6 @@
 				0C17D4071D37787500415754 /* AppDelegate.m */,
 				0C17D4091D37787500415754 /* ViewController.h */,
 				0C17D40A1D37787500415754 /* ViewController.m */,
-				0C17D40C1D37787500415754 /* Main.storyboard */,
-				0C17D40F1D37787500415754 /* Assets.xcassets */,
-				0C17D4111D37787500415754 /* LaunchScreen.storyboard */,
-				0C17D4141D37787500415754 /* Info.plist */,
 				0C17D4031D37787500415754 /* Supporting Files */,
 			);
 			path = AFNetworking;
@@ -125,6 +121,10 @@
 				0C17D41A1D3778C400415754 /* AFNetworking */,
 				0C17D4281D3778C400415754 /* UIKit+AFNetworking */,
 				0C17D4041D37787500415754 /* main.m */,
+				0C17D40C1D37787500415754 /* Main.storyboard */,
+				0C17D40F1D37787500415754 /* Assets.xcassets */,
+				0C17D4111D37787500415754 /* LaunchScreen.storyboard */,
+				0C17D4141D37787500415754 /* Info.plist */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
