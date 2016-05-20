@@ -499,6 +499,7 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
 
 @implementation AFURLSessionManager
 
+#pragma mark - 创建和管理 NSURLSession
 - (instancetype)init {
     return [self initWithSessionConfiguration:nil];
 }
@@ -569,6 +570,7 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
 - (void)dealloc {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
+#pragma mark 创建和管理 NSURLSession
 
 #pragma mark -
 
@@ -614,12 +616,21 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
 - (void)setDelegate:(AFURLSessionManagerTaskDelegate *)delegate
             forTask:(NSURLSessionTask *)task
 {
+    /**
+     *  检查参数
+     */
     NSParameterAssert(task);
     NSParameterAssert(delegate);
 
+    /**
+     *  使用 NSLock 来保证不同线程使用 mutableTaskDelegatesKeyedByTaskIdentifier 时，不会出现线程竞争的问题。
+     */
     [self.lock lock];
+    /**
+     *  AFNRUSessionManager 就是通过字典 mutableTaskDelegatesKeyedByTaskIdentifier 来存储并管理每一个 NSURLSessionTask，它以 taskIdentifier 为键存储 task
+     */
     self.mutableTaskDelegatesKeyedByTaskIdentifier[@(task.taskIdentifier)] = delegate;
-    [delegate setupProgressForTask:task];
+    [delegate setupProgressForTask:task]; // 该方法一部分是对代理持有的两个属性 uploadProgress 和 downloadProgress 设置回调，第二部分是对 task 和 NSProgress 属性进行键值观测
     [self addNotificationObserverForTask:task];
     [self.lock unlock];
 }
@@ -634,6 +645,9 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
     delegate.completionHandler = completionHandler;
 
     dataTask.taskDescription = self.taskDescriptionForSessionTasks;
+    /**
+     *  在这个方法中同时调用了另一个方法 - [AFURLSessionManager setDelegate:forTask:] 来设置代理
+     */
     [self setDelegate:delegate forTask:dataTask];
 
     delegate.uploadProgressBlock = uploadProgressBlock;
@@ -759,7 +773,7 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
     [[NSNotificationCenter defaultCenter] removeObserver:self name:AFNSURLSessionTaskDidResumeNotification object:task];
 }
 
-#pragma mark -
+#pragma mark - 管理 NSURLSessionTask
 
 - (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request
                             completionHandler:(void (^)(NSURLResponse *response, id responseObject, NSError *error))completionHandler
@@ -775,9 +789,16 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
     __block NSURLSessionDataTask *dataTask = nil;
     url_session_manager_create_task_safely(^{
          // 返回 NSURLSessionDataTask
+        /**
+         *  1、调用 - [NSURLSession dataTaskWithRequest:] 方法传入 NSURLRequest
+         */
         dataTask = [self.session dataTaskWithRequest:request];
     });
 
+    /**
+     *  2、调用 - [AFURLSessionManager addDelegateForDataTask:uploadProgress:downloadProgress:completionHandler:] 方法在方法内部生成一个 AFURLSessionManagerTaskDelegate 对象
+        3、将 completionHandler uploadProgressBlock 和 downloadProgressBlock 传入该对象并在相应事件发生时进行回调
+     */
     [self addDelegateForDataTask:dataTask uploadProgress:uploadProgressBlock downloadProgress:downloadProgressBlock completionHandler:completionHandler];
 
     return dataTask;
@@ -791,6 +812,9 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
                                 completionHandler:(void (^)(NSURLResponse *response, id responseObject, NSError *error))completionHandler
 {
     __block NSURLSessionUploadTask *uploadTask = nil;
+    /**
+     *  url_session_manager_create_task_safely 的调用是因为苹果框架中的一个 bug #2093
+     */
     url_session_manager_create_task_safely(^{
         uploadTask = [self.session uploadTaskWithRequest:request fromFile:fileURL];
     });
@@ -867,6 +891,7 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
 
     return downloadTask;
 }
+#pragma mark 管理 NSURLSessionTask
 
 #pragma mark -
 - (NSProgress *)uploadProgressForTask:(NSURLSessionTask *)task {
