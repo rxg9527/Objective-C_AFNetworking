@@ -269,6 +269,10 @@ didCompleteWithError:(NSError *)error
 
     __block id responseObject = nil;
 
+    /**
+     *  获取数据, 存储 `responseSerializer` 和 `downloadFileURL`
+     *  这部分代码从 mutableData 中取出了数据，设置了 userInfo。
+     */
     __block NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
     userInfo[AFNetworkingTaskDidCompleteResponseSerializerKey] = manager.responseSerializer;
 
@@ -287,6 +291,10 @@ didCompleteWithError:(NSError *)error
     }
 
     if (error) {
+        /**
+         *  在存在错误时调用 completionHandler
+         *  如果当前 manager 持有 completionGroup 或者 completionQueue 就使用它们。否则会创建一个 dispatch_group_t 并在主线程中调用 completionHandler 并发送通知(在主线程中)。
+         */
         userInfo[AFNetworkingTaskDidCompleteErrorKey] = error;
 
         dispatch_group_async(manager.completionGroup ?: url_session_manager_completion_group(), manager.completionQueue ?: dispatch_get_main_queue(), ^{
@@ -299,6 +307,10 @@ didCompleteWithError:(NSError *)error
             });
         });
     } else {
+        /**
+         *  调用 completionHandler
+            如果在执行当前 task 时没有遇到错误，那么先对数据进行序列化，然后同样调用 block 并发送通知。
+         */
         dispatch_async(url_session_manager_processing_queue(), ^{
             NSError *serializationError = nil;
             responseObject = [manager.responseSerializer responseObjectForResponse:task.response data:data error:&serializationError];
@@ -329,7 +341,9 @@ didCompleteWithError:(NSError *)error
 }
 
 #pragma mark - NSURLSessionDataTaskDelegate
-
+/**
+ *  收到数据时调用，为 mutableData 追加数据
+ */
 - (void)URLSession:(__unused NSURLSession *)session
           dataTask:(__unused NSURLSessionDataTask *)dataTask
     didReceiveData:(NSData *)data
@@ -338,7 +352,9 @@ didCompleteWithError:(NSError *)error
 }
 
 #pragma mark - NSURLSessionDownloadTaskDelegate
-
+/**
+ *  完成下载对应文件时调用，处理下载的文件
+ */
 - (void)URLSession:(NSURLSession *)session
       downloadTask:(NSURLSessionDownloadTask *)downloadTask
 didFinishDownloadingToURL:(NSURL *)location
