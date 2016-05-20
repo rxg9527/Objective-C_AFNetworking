@@ -351,7 +351,7 @@ forHTTPHeaderField:(NSString *)field
 }
 
 #pragma mark -
-
+// 返回 NSMutableURLRequest
 - (NSMutableURLRequest *)requestWithMethod:(NSString *)method
                                  URLString:(NSString *)URLString
                                 parameters:(id)parameters

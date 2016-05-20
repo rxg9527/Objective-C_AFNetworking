@@ -761,6 +761,7 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
 
     __block NSURLSessionDataTask *dataTask = nil;
     url_session_manager_create_task_safely(^{
+         // 返回 NSURLSessionDataTask
         dataTask = [self.session dataTaskWithRequest:request];
     });
 
