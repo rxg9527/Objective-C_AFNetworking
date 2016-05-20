@@ -990,7 +990,11 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
     return [[self class] instancesRespondToSelector:selector];
 }
 
-#pragma mark - NSURLSessionDelegate
+#pragma mark - 实现 NSURLSessionDelegate 等协议中的代理方法
+/**
+ *  - [AFURLSessionManager initWithSessionConfiguration:] 将 NSURLSession 的代理指向 self，然后实现这些方法，提供更简洁的 block 的接口
+ */
+#pragma mark NSURLSessionDelegate
 
 - (void)URLSession:(NSURLSession *)session
 didBecomeInvalidWithError:(NSError *)error
@@ -1251,6 +1255,7 @@ expectedTotalBytes:(int64_t)expectedTotalBytes
         self.downloadTaskDidResume(session, downloadTask, fileOffset, expectedTotalBytes);
     }
 }
+#pragma mark 实现 NSURLSessionDelegate 等协议中的代理方法
 
 #pragma mark - NSSecureCoding
 
