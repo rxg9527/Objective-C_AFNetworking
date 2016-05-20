@@ -109,7 +109,10 @@ typedef void (^AFURLSessionTaskProgressBlock)(NSProgress *);
 typedef void (^AFURLSessionTaskCompletionHandler)(NSURLResponse *response, id responseObject, NSError *error);
 
 
-#pragma mark -
+#pragma mark - AFURLSessionManagerTaskDelegate 
+/**
+ *  主要为 task 提供进度管理功能，并在 task 结束时回调， 也就是调用在 - [AFURLSessionManager dataTaskWithRequest:uploadProgress:downloadProgress:completionHandler:] 等方法中传入的 completionHandler
+ */
 
 @interface AFURLSessionManagerTaskDelegate : NSObject <NSURLSessionTaskDelegate, NSURLSessionDataDelegate, NSURLSessionDownloadDelegate>
 @property (nonatomic, weak) AFURLSessionManager *manager;
@@ -143,6 +146,10 @@ typedef void (^AFURLSessionTaskCompletionHandler)(NSURLResponse *response, id re
 #pragma mark - NSProgress Tracking
 
 - (void)setupProgressForTask:(NSURLSessionTask *)task {
+    /**
+     *  设置在上传进度或者下载进度状态改变时的回调
+        主要目的是在对应 NSProgress 的状态改变时，调用 resume suspend 等方法改变 task 的状态。
+     */
     __weak __typeof__(task) weakTask = task;
 
     self.uploadProgress.totalUnitCount = task.countOfBytesExpectedToSend;
@@ -182,6 +189,9 @@ typedef void (^AFURLSessionTaskCompletionHandler)(NSURLResponse *response, id re
         }];
     }
 
+    /**
+     *  第二部分是对 task 和 NSProgress 属性进行键值观测
+     */
     [task addObserver:self
            forKeyPath:NSStringFromSelector(@selector(countOfBytesReceived))
               options:NSKeyValueObservingOptionNew
@@ -220,12 +230,18 @@ typedef void (^AFURLSessionTaskCompletionHandler)(NSURLResponse *response, id re
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context {
+    /**
+     *  在 observeValueForKeypath:ofObject:change:context: 方法中改变进度，并调用 block
+     */
     if ([object isKindOfClass:[NSURLSessionTask class]] || [object isKindOfClass:[NSURLSessionDownloadTask class]]) {
         if ([keyPath isEqualToString:NSStringFromSelector(@selector(countOfBytesReceived))]) {
             self.downloadProgress.completedUnitCount = [change[NSKeyValueChangeNewKey] longLongValue];
         } else if ([keyPath isEqualToString:NSStringFromSelector(@selector(countOfBytesExpectedToReceive))]) {
             self.downloadProgress.totalUnitCount = [change[NSKeyValueChangeNewKey] longLongValue];
         } else if ([keyPath isEqualToString:NSStringFromSelector(@selector(countOfBytesSent))]) {
+            /**
+             *  对象的某些属性改变时更新 NSProgress 对象或使用 block 传递 NSProgress 对象 self.uploadProgressBlock(object)。
+             */
             self.uploadProgress.completedUnitCount = [change[NSKeyValueChangeNewKey] longLongValue];
         } else if ([keyPath isEqualToString:NSStringFromSelector(@selector(countOfBytesExpectedToSend))]) {
             self.uploadProgress.totalUnitCount = [change[NSKeyValueChangeNewKey] longLongValue];
