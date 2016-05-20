@@ -505,6 +505,7 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
 
 /**
  AFURLSessionManager 负责生成 NSURLSession 的实例，管理 AFSecurityPolicy 和 AFNetworkReachabilityManager，来保证请求的安全和查看网络连接情况，它有一个 AFJSONResponseSerializer 的实例来序列化 HTTP 响应
+ 初始化方法中，需要完成初始化一些自己持有的实例
  */
 - (instancetype)initWithSessionConfiguration:(NSURLSessionConfiguration *)configuration {
     self = [super init];
@@ -513,6 +514,9 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
     }
 
     if (!configuration) {
+        /**
+         *  1、初始化会话配置（NSURLSessionConfiguration），默认为 defaultSessionConfiguration
+         */
         configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
     }
 
@@ -521,8 +525,14 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
     self.operationQueue = [[NSOperationQueue alloc] init];
     self.operationQueue.maxConcurrentOperationCount = 1;
 
+    /**
+     *  2、初始化会话（session），并设置会话的代理以及代理队列
+     */
     self.session = [NSURLSession sessionWithConfiguration:self.sessionConfiguration delegate:self delegateQueue:self.operationQueue];
 
+    /**
+     *  3、初始化管理响应序列化（AFJSONResponseSerializer），安全认证（AFSecurityPolicy）以及监控网络状态（AFNetworkReachabilityManager）的实例
+     */
     self.responseSerializer = [AFJSONResponseSerializer serializer]; // 负责序列化响应
 
     self.securityPolicy = [AFSecurityPolicy defaultPolicy]; // 负责身份认证
@@ -531,6 +541,9 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
     self.reachabilityManager = [AFNetworkReachabilityManager sharedManager]; // 查看网络连接情况
 #endif
 
+    /**
+     4、初始化保存 data task 的字典（mutableTaskDelegatesKeyedByTaskIdentifier）
+     */
     self.mutableTaskDelegatesKeyedByTaskIdentifier = [[NSMutableDictionary alloc] init];
 
     self.lock = [[NSLock alloc] init];
