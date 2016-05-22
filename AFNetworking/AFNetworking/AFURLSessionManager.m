@@ -405,13 +405,20 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
 @end
 
 @implementation _AFURLSessionTaskSwizzling
-
+/**
+ *  _AFURLSessionTaskSwizzling 的唯一功能就是修改 NSURLSessionTask 的 resume 和 suspend 方法，使用下面的方法替换原有的实现
+ 目的是为了在方法 resume 或者 suspend 被调用时发出通知。
+ *  load 方法只会在整个文件被引入时调用一次
+ */
 + (void)load {
     /**
      WARNING: Trouble Ahead
      https://github.com/AFNetworking/AFNetworking/pull/2702
      */
 
+    /**
+     *  1、首先用 NSClassFromString(@"NSURLSessionTask") 判断当前部署的 iOS 版本是否含有类 NSURLSessionTask
+     */
     if (NSClassFromString(@"NSURLSessionTask")) {
         /**
          iOS 7 and iOS 8 differ in NSURLSessionTask implementation, which makes the next bit of code a bit tricky.
@@ -443,11 +450,23 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
         NSURLSession * session = [NSURLSession sessionWithConfiguration:configuration];
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnonnull"
+        /**
+         *  2、因为 iOS7 和 iOS8 上对于 NSURLSessionTask 的实现不同，所以会通过 - [NSURLSession dataTaskWithURL:] 方法返回一个 NSURLSessionTask 实例
+         */
         NSURLSessionDataTask *localDataTask = [session dataTaskWithURL:nil];
 #pragma clang diagnostic pop
+        /**
+         *  3、取得当前类 _AFURLSessionTaskSwizzling 中的实现 af_resume
+         */
         IMP originalAFResumeIMP = method_getImplementation(class_getInstanceMethod([self class], @selector(af_resume)));
         Class currentClass = [localDataTask class];
         
+        /**
+         *  4、如果当前类 currentClass 有 resume 方法，
+            5、使用 swizzleResumeAndSuspendMethodForClass: 调剂该类的 resume 和 suspend 方法
+            6、如果没有 resume 方法，则 currentClass = [currentClass superclass];
+            这里复杂的实现是为了解决 bug #2702
+         */
         while (class_getInstanceMethod(currentClass, @selector(resume))) {
             Class superClass = [currentClass superclass];
             IMP classResumeIMP = method_getImplementation(class_getInstanceMethod(currentClass, @selector(resume)));
@@ -482,6 +501,9 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
     return NSURLSessionTaskStateCanceling;
 }
 
+/**
+ *  这样做的目的是为了在方法 resume 或者 suspend 被调用时发出通知。
+ */
 - (void)af_resume {
     NSAssert([self respondsToSelector:@selector(state)], @"Does not respond to state");
     NSURLSessionTaskState state = [self state];
