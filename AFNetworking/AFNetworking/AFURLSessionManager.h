@@ -100,6 +100,15 @@ NS_ASSUME_NONNULL_BEGIN
  引入 AFNetworkReachabilityManager 监控网络状态
  */
 @interface AFURLSessionManager : NSObject <NSURLSessionDelegate, NSURLSessionTaskDelegate, NSURLSessionDataDelegate, NSURLSessionDownloadDelegate, NSSecureCoding, NSCopying>
+/**
+ *  
+ AFURLSessionManager 是对 NSURLSession 的封装
+ 它通过 - [AFURLSessionManager dataTaskWithRequest:completionHandler:] 等接口创建 NSURLSessionDataTask 的实例
+ 持有一个字典 mutableTaskDelegatesKeyedByTaskIdentifier 管理这些 data task 实例
+ 引入 AFURLSessionManagerTaskDelegate 来对传入的 uploadProgressBlock downloadProgressBlock completionHandler 在合适的时间进行调用
+ 实现了全部的代理方法来提供 block 接口
+ 通过方法调剂在 data task 状态改变时，发出通知
+ */
 
 /**
  The managed session.
