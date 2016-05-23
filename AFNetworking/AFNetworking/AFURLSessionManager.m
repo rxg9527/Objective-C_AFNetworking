@@ -1118,6 +1118,9 @@ didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
     NSURLSessionAuthChallengeDisposition disposition = NSURLSessionAuthChallengePerformDefaultHandling;
     __block NSURLCredential *credential = nil;
 
+    /**
+     *  如果没有传入 taskDidReceiveAuthenticationChallenge block，只有在 - [AFSecurityPolicy evaluateServerTrust:forDomain:] 返回 YES 时，才会获得认证凭证 credential。
+     */
     if (self.taskDidReceiveAuthenticationChallenge) {
         disposition = self.taskDidReceiveAuthenticationChallenge(session, task, challenge, &credential);
     } else {

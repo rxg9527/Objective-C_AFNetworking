@@ -35,7 +35,9 @@ typedef NS_ENUM(NSUInteger, AFSSLPinningMode) {
  */
 
 NS_ASSUME_NONNULL_BEGIN
-
+/**
+ *  AFSecurityPolicy 是 AFNetworking 用来保证 HTTP 请求安全的类，它被 AFURLSessionManager 持有
+ */
 @interface AFSecurityPolicy : NSObject <NSSecureCoding, NSCopying>
 
 /**
@@ -120,6 +122,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param domain The domain of serverTrust. If `nil`, the domain will not be validated.
 
  @return Whether or not to trust the server.
+ */
+/**
+ *  判断当前服务器是否被信任
  */
 - (BOOL)evaluateServerTrust:(SecTrustRef)serverTrust
                   forDomain:(nullable NSString *)domain;
