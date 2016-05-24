@@ -85,6 +85,9 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
     return JSONObject;
 }
 
+/**
+ *  是 AFURLResponseSerialization 模块中最基本的类
+ */
 @implementation AFHTTPResponseSerializer
 
 + (instancetype)serializer {
@@ -97,16 +100,24 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
         return nil;
     }
 
+    /**
+     *  因为是对 HTTP 响应进行序列化，所以这里设置了 stringEncoding 为 NSUTF8StringEncoding 而且没有对接收的内容类型加以限制。
+     */
     self.stringEncoding = NSUTF8StringEncoding;
 
+    /**
+     *  将 acceptableStatusCodes 设置为从 200 到 299 之间的状态码, 因为只有这些状态码表示获得了有效的响应。
+     */
     self.acceptableStatusCodes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(200, 100)];
     self.acceptableContentTypes = nil;
 
     return self;
 }
 
-#pragma mark -
-
+#pragma mark - 验证响应的有效性
+/**
+ *  根据在初始化方法中初始化的属性 acceptableContentTypes 和 acceptableStatusCodes 来判断当前响应是否有效。
+ */
 - (BOOL)validateResponse:(NSHTTPURLResponse *)response
                     data:(NSData *)data
                    error:(NSError * __autoreleasing *)error
@@ -116,7 +127,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 
     if (response && [response isKindOfClass:[NSHTTPURLResponse class]]) {
         if (self.acceptableContentTypes && ![self.acceptableContentTypes containsObject:[response MIMEType]] &&
-            !([response MIMEType] == nil && [data length] == 0)) {
+            !([response MIMEType] == nil && [data length] == 0)) { // 返回内容类型无效
 
             if ([data length] > 0 && [response URL]) {
                 NSMutableDictionary *mutableUserInfo = [@{
@@ -127,14 +138,15 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
                 if (data) {
                     mutableUserInfo[AFNetworkingOperationFailingURLResponseDataErrorKey] = data;
                 }
-
+                
+                // 出现错误时通过 AFErrorWithUnderlyingError 生成格式化之后的错误，最后设置 responseIsValid
                 validationError = AFErrorWithUnderlyingError([NSError errorWithDomain:AFURLResponseSerializationErrorDomain code:NSURLErrorCannotDecodeContentData userInfo:mutableUserInfo], validationError);
             }
 
             responseIsValid = NO;
         }
 
-        if (self.acceptableStatusCodes && ![self.acceptableStatusCodes containsIndex:(NSUInteger)response.statusCode] && [response URL]) {
+        if (self.acceptableStatusCodes && ![self.acceptableStatusCodes containsIndex:(NSUInteger)response.statusCode] && [response URL]) { // 返回状态码无效
             NSMutableDictionary *mutableUserInfo = [@{
                                                NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: %@ (%ld)", @"AFNetworking", nil), [NSHTTPURLResponse localizedStringForStatusCode:response.statusCode], (long)response.statusCode],
                                                NSURLErrorFailingURLErrorKey:[response URL],
@@ -159,7 +171,10 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 }
 
 #pragma mark - AFURLResponseSerialization
-
+/**
+ *  协议的实现
+ *  对响应进行验证，然后返回数据
+ */
 - (id)responseObjectForResponse:(NSURLResponse *)response
                            data:(NSData *)data
                           error:(NSError *__autoreleasing *)error
