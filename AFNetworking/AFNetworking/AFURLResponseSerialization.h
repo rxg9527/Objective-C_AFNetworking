@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
  这个模块使用在 AFURLSessionManager 也就是核心类中
  处理响应的模块，将请求返回的数据解析成对应的格式
  */
-@protocol AFURLResponseSerialization <NSObject, NSSecureCoding, NSCopying>
+@protocol AFURLResponseSerialization <NSObject, NSSecureCoding, NSCopying> // 遵循这个协议的类同时也要遵循 NSObject、NSSecureCoding 和 NSCopying 这三个协议，实现安全编码、拷贝以及 Objective-C 对象的基本行为。
 
 /**
  The response object decoded from the data associated with a specified response.
@@ -43,6 +43,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param error The error that occurred while attempting to decode the response data.
 
  @return The object decoded from the specified response data.
+ */
+/**
+ *  返回对特定响应的数据解码后的对象
  */
 - (nullable id)responseObjectForResponse:(nullable NSURLResponse *)response
                            data:(nullable NSData *)data
@@ -56,6 +59,10 @@ NS_ASSUME_NONNULL_BEGIN
  `AFHTTPResponseSerializer` conforms to the `AFURLRequestSerialization` & `AFURLResponseSerialization` protocols, offering a concrete base implementation of query string / URL form-encoded parameter serialization and default request headers, as well as response status code and content type validation.
 
  Any request or response serializer dealing with HTTP is encouraged to subclass `AFHTTPResponseSerializer` in order to ensure consistent default behavior.
+ */
+/**
+ 模块中的所有类都遵循 AFURLResponseSerialization 协议
+ AFHTTPResponseSerializer 为模块中最终要的根类
  */
 @interface AFHTTPResponseSerializer : NSObject <AFURLResponseSerialization>
 
