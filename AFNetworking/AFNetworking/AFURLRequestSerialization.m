@@ -275,6 +275,9 @@ static void *AFHTTPRequestSerializerObserverContext = &AFHTTPRequestSerializerOb
     self.mutableObservedChangedKeyPaths = [NSMutableSet set];
     for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
         if ([self respondsToSelector:NSSelectorFromString(keyPath)]) {
+            /**
+             *  对一些属性进行 KVO，确保它们在改变后更新 NSMutableURLRequest 中对应的属性
+             */
             [self addObserver:self forKeyPath:keyPath options:NSKeyValueObservingOptionNew context:AFHTTPRequestSerializerObserverContext];
         }
     }
@@ -400,6 +403,9 @@ forHTTPHeaderField:(NSString *)field
                                 parameters:(id)parameters
                                      error:(NSError *__autoreleasing *)error
 {
+    /**
+     *  1、对参数进行检查
+     */
     NSParameterAssert(method);
     NSParameterAssert(URLString);
 
@@ -410,15 +416,18 @@ forHTTPHeaderField:(NSString *)field
     /**
      在生成 NSURLRequest 的时候设置 NSURLRequest 的一些属性
      */
+    // 2、设置 HTTP 方法
     NSMutableURLRequest *mutableRequest = [[NSMutableURLRequest alloc] initWithURL:url];
     mutableRequest.HTTPMethod = method;
 
+    // 3、通过 mutableObservedChangedKeyPaths 字典设置 NSMutableURLRequest 的属性
     for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
         if ([self.mutableObservedChangedKeyPaths containsObject:keyPath]) {
             [mutableRequest setValue:[self valueForKeyPath:keyPath] forKey:keyPath];
         }
     }
 
+    // 4、调用 - [AFHTTPRequestSerializer requestBySerializingRequest:withParameters:error:] 设置 HTTP 头部字段和查询参数。
     mutableRequest = [[self requestBySerializingRequest:mutableRequest withParameters:parameters error:error] mutableCopy];
 
 	return mutableRequest;
@@ -525,6 +534,7 @@ forHTTPHeaderField:(NSString *)field
 
     NSMutableURLRequest *mutableRequest = [request mutableCopy];
 
+    // 1、通过 HTTPRequestHeaders 字典设置头部字段
     [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
         if (![request valueForHTTPHeaderField:field]) {
             [mutableRequest setValue:value forHTTPHeaderField:field];
@@ -547,12 +557,15 @@ forHTTPHeaderField:(NSString *)field
         } else {
             switch (self.queryStringSerializationStyle) {
                 case AFHTTPRequestQueryStringDefaultStyle:
+                    // 2、调用 AFQueryStringFromParameters 将参数转换为查询参数
                     query = AFQueryStringFromParameters(parameters);
                     break;
             }
         }
     }
 
+    // 3、将 parameters 添加到 URL 或者 HTTP body 中
+    // 如果 HTTP 方法为 GET HEAD 或者 DELETE，也就是在初始化方法中设置的，那么参数会追加到 URL 后面。否则会被放入 HTTP body 中
     if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
         if (query && query.length > 0) {
             mutableRequest.URL = [NSURL URLWithString:[[mutableRequest.URL absoluteString] stringByAppendingFormat:mutableRequest.URL.query ? @"&%@" : @"?%@", query]];
@@ -568,6 +581,7 @@ forHTTPHeaderField:(NSString *)field
         [mutableRequest setHTTPBody:[query dataUsingEncoding:self.stringEncoding]];
     }
 
+    // 4、最后这个方法会返回一个 NSMutableURLRequest
     return mutableRequest;
 }
 
