@@ -22,9 +22,21 @@
 #import <Foundation/Foundation.h>
 #import <Security/Security.h>
 
+/**
+ *  共有三种验证服务器是否被信任的方式
+ */
 typedef NS_ENUM(NSUInteger, AFSSLPinningMode) {
+    /**
+     *  默认的认证方式，只会在系统的信任的证书列表中对服务端返回的证书进行验证
+     */
     AFSSLPinningModeNone,
+    /**
+     *  需要客户端预先保存服务端的证书
+     */
     AFSSLPinningModePublicKey,
+    /**
+     *  需要预先保存服务端发送的证书，但是这里只会验证证书中的公钥是否正确
+     */
     AFSSLPinningModeCertificate,
 };
 
@@ -36,7 +48,7 @@ typedef NS_ENUM(NSUInteger, AFSSLPinningMode) {
 
 NS_ASSUME_NONNULL_BEGIN
 /**
- *  AFSecurityPolicy 是 AFNetworking 用来保证 HTTP 请求安全的类，它被 AFURLSessionManager 持有
+ *  AFSecurityPolicy 是 AFNetworking 用来保证 HTTP 请求安全的类（主要作用就是验证 HTTPS 请求的证书是否有效），它被 AFURLSessionManager 持有
  */
 @interface AFSecurityPolicy : NSObject <NSSecureCoding, NSCopying>
 
