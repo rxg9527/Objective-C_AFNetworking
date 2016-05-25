@@ -112,6 +112,10 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
 @property (nonatomic, assign) NSStringEncoding stringEncoding;
 
 /**
+ *  还有一些 NSURLRequest 的属性是通过另一种方式来设置的，AFNetworking 为这些功能提供了接口
+    它们都会通过 AFHTTPRequestSerializerObservedKeyPaths 的调用而返回。
+ */
+/**
  Whether created requests can use the device’s cellular radio (if present). `YES` by default.
 
  @see NSMutableURLRequest -setAllowsCellularAccess:

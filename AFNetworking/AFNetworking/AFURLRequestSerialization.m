@@ -195,8 +195,10 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
 - (NSMutableURLRequest *)requestByFinalizingMultipartFormData;
 @end
 
-#pragma mark -
-
+#pragma mark - 返回 NSURLRequest 的一些属性
+/**
+ *  返回 NSURLRequest 的一些属性
+ */
 static NSArray * AFHTTPRequestSerializerObservedKeyPaths() {
     static NSArray *_AFHTTPRequestSerializerObservedKeyPaths = nil;
     static dispatch_once_t onceToken;
@@ -405,6 +407,9 @@ forHTTPHeaderField:(NSString *)field
 
     NSParameterAssert(url);
 
+    /**
+     在生成 NSURLRequest 的时候设置 NSURLRequest 的一些属性
+     */
     NSMutableURLRequest *mutableRequest = [[NSMutableURLRequest alloc] initWithURL:url];
     mutableRequest.HTTPMethod = method;
 
@@ -576,6 +581,9 @@ forHTTPHeaderField:(NSString *)field
     return [super automaticallyNotifiesObserversForKey:key];
 }
 
+/**
+ *  在 NSURLRequest 的一些属性被设置时，会触发 KVO，然后将新的属性存储在一个名为 mutableObservedChangedKeyPaths 的字典中
+ */
 - (void)observeValueForKeyPath:(NSString *)keyPath
                       ofObject:(__unused id)object
                         change:(NSDictionary *)change
