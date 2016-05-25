@@ -97,6 +97,13 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
 
  Any request or response serializer dealing with HTTP is encouraged to subclass `AFHTTPRequestSerializer` in order to ensure consistent default behavior.
  */
+/**
+ 文件中的大部分类都是为 AFHTTPRequestSerializer 服务的：
+ 处理查询的 URL 参数
+ 设置 HTTP 头部字段
+ 设置请求的属性
+ 分块上传
+ */
 @interface AFHTTPRequestSerializer : NSObject <AFURLRequestSerialization>
 
 /**

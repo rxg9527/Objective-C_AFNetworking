@@ -44,6 +44,9 @@ typedef NSString * (^AFQueryStringSerializationBlock)(NSURLRequest *request, id 
     - parameter string: The string to be percent-escaped.
     - returns: The percent-escaped string.
  */
+/**
+ *  对 field 和 value 进行处理，将其中的 :#[]@!$&'()*+,;= 等字符转换为百分号表示的形式
+ */
 NSString * AFPercentEscapedStringFromString(NSString *string) {
     static NSString * const kAFCharactersGeneralDelimitersToEncode = @":#[]@"; // does not include "?" or "/" due to RFC 3986 - Section 3.4
     static NSString * const kAFCharactersSubDelimitersToEncode = @"!$&'()*+,;=";
@@ -76,8 +79,10 @@ NSString * AFPercentEscapedStringFromString(NSString *string) {
 	return escaped;
 }
 
-#pragma mark -
-
+#pragma mark - 处理查询参数
+/**
+ *  两个属性 field 和 value 对应 HTTP 请求的查询 URL 中的参数
+ */
 @interface AFQueryStringPair : NSObject
 @property (readwrite, nonatomic, strong) id field;
 @property (readwrite, nonatomic, strong) id value;
@@ -101,8 +106,14 @@ NSString * AFPercentEscapedStringFromString(NSString *string) {
     return self;
 }
 
+/**
+ *  会返回 key=value 这种格式
+ */
 - (NSString *)URLEncodedStringValue {
     if (!self.value || [self.value isEqual:[NSNull null]]) {
+        /**
+         *  对 field 和 value 进行处理，将其中的 :#[]@!$&'()*+,;= 等字符转换为百分号表示的形式
+         */
         return AFPercentEscapedStringFromString([self.field description]);
     } else {
         return [NSString stringWithFormat:@"%@=%@", AFPercentEscapedStringFromString([self.field description]), AFPercentEscapedStringFromString([self.value description])];
@@ -121,7 +132,9 @@ NSString * AFQueryStringFromParameters(NSDictionary *parameters) {
     for (AFQueryStringPair *pair in AFQueryStringPairsFromDictionary(parameters)) {
         [mutablePairs addObject:[pair URLEncodedStringValue]];
     }
-
+    /**
+     *  得到这个数组之后就会调用 AFQueryStringFromParameters 使用 & 来拼接它们。
+     */
     return [mutablePairs componentsJoinedByString:@"&"];
 }
 
@@ -129,6 +142,9 @@ NSArray * AFQueryStringPairsFromDictionary(NSDictionary *dictionary) {
     return AFQueryStringPairsFromKeyAndValue(nil, dictionary);
 }
 
+/**
+ *  递归函数 AFQueryStringPairsFromKeyAndValue，如果当前的 value 是一个集合类型的话，那么它就会不断地递归调用自己。
+ */
 NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
     NSMutableArray *mutableQueryStringComponents = [NSMutableArray array];
 
@@ -157,6 +173,16 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
         [mutableQueryStringComponents addObject:[[AFQueryStringPair alloc] initWithField:key value:value]];
     }
 
+    /**
+     *  最后返回一个数组
+     
+     [
+     username=draveness,
+     password=123456,
+     hello[world]=helloworld
+     ]
+
+     */
     return mutableQueryStringComponents;
 }
 
