@@ -49,6 +49,7 @@ typedef NS_ENUM(NSUInteger, AFSSLPinningMode) {
 NS_ASSUME_NONNULL_BEGIN
 /**
  *  AFSecurityPolicy 是 AFNetworking 用来保证 HTTP 请求安全的类（主要作用就是验证 HTTPS 请求的证书是否有效），它被 AFURLSessionManager 持有
+    在使用 AFSecurityPolicy 验证服务端是否受到信任之前，要对其进行初始化，使用初始化方法时，主要目的是设置验证服务器是否受信任的方式。
  */
 @interface AFSecurityPolicy : NSObject <NSSecureCoding, NSCopying>
 
@@ -108,6 +109,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param pinningMode The SSL pinning mode.
 
  @return A new security policy.
+ 在使用 AFSecurityPolicy 验证服务端是否受到信任之前，要对其进行初始化，使用初始化方法时，主要目的是设置验证服务器是否受信任的方式。
  */
 + (instancetype)policyWithPinningMode:(AFSSLPinningMode)pinningMode;
 

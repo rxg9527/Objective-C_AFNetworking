@@ -185,6 +185,9 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
     return securityPolicy;
 }
 
+/**
+ *  在使用 AFSecurityPolicy 验证服务端是否受到信任之前，要对其进行初始化，使用初始化方法时，主要目的是设置验证服务器是否受信任的方式。
+ */
 + (instancetype)policyWithPinningMode:(AFSSLPinningMode)pinningMode {
     return [self policyWithPinningMode:pinningMode withPinnedCertificates:[self defaultPinnedCertificates]];
 }
@@ -193,6 +196,9 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
     AFSecurityPolicy *securityPolicy = [[self alloc] init];
     securityPolicy.SSLPinningMode = pinningMode;
 
+    /**
+     *  在调用 pinnedCertificate 的 setter 方法时，会从全部的证书中取出公钥保存到 pinnedPublicKeys 属性中。
+     */
     [securityPolicy setPinnedCertificates:pinnedCertificates];
 
     return securityPolicy;
@@ -209,12 +215,18 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
     return self;
 }
 
+/**
+ *  在调用 pinnedCertificate 的 setter 方法时，会从全部的证书中取出公钥保存到 pinnedPublicKeys 属性中。
+ */
 - (void)setPinnedCertificates:(NSSet *)pinnedCertificates {
     _pinnedCertificates = pinnedCertificates;
 
     if (self.pinnedCertificates) {
         NSMutableSet *mutablePinnedPublicKeys = [NSMutableSet setWithCapacity:[self.pinnedCertificates count]];
         for (NSData *certificate in self.pinnedCertificates) {
+            /**
+             *  在这里调用了 AFPublicKeyForCertificate 对证书进行操作，返回一个公钥
+             */
             id publicKey = AFPublicKeyForCertificate(certificate);
             if (!publicKey) {
                 continue;
