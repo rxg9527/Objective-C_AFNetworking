@@ -48,28 +48,54 @@ static BOOL AFSecKeyIsEqualToKey(SecKeyRef key1, SecKeyRef key2) {
 #endif
 }
 
+#pragma mark - 操作 SecTrustRef
+/**
+ *  对证书进行操作，返回一个公钥
+ */
 static id AFPublicKeyForCertificate(NSData *certificate) {
+    /**
+     *  1、初始化一坨临时变量
+     */
     id allowedPublicKey = nil;
     SecCertificateRef allowedCertificate;
     SecCertificateRef allowedCertificates[1];
     CFArrayRef tempCertificates = nil;
     SecPolicyRef policy = nil;
+    // 每一个 SecTrustRef 的对象都是包含多个 SecCertificateRef 和 SecPolicyRef。其中 SecCertificateRef 可以使用 DER 进行表示，并且其中存储着公钥信息。
     SecTrustRef allowedTrust = nil;
     SecTrustResultType result;
 
+    /**
+     *  2、使用 SecCertificateCreateWithData 通过 DER 表示的数据生成一个 SecCertificateRef，然后判断返回值是否为 NULL
+        这里使用了一个非常神奇的宏 __Require_Quiet，它会判断 allowedCertificate != NULL 是否成立，如果 allowedCertificate 为空就会跳到 _out 标签处继续执行
+     */
     allowedCertificate = SecCertificateCreateWithData(NULL, (__bridge CFDataRef)certificate);
     __Require_Quiet(allowedCertificate != NULL, _out);
 
+    /**
+     *  3、通过上面的 allowedCertificate 创建一个 CFArray
+     */
     allowedCertificates[0] = allowedCertificate;
     tempCertificates = CFArrayCreate(NULL, (const void **)allowedCertificates, 1, NULL);
-
+    
+    /**
+     *  4、创建一个默认的符合 X509 标准的 SecPolicyRef，通过默认的 SecPolicyRef 和证书创建一个 SecTrustRef 用于信任评估，对该对象进行信任评估，确认生成的 SecTrustRef 是值得信任的
+        __Require_noErr_Quiet 和 __Require_Quiet 差不多，只是会根据返回值判断是否存在错误。
+     */
     policy = SecPolicyCreateBasicX509();
-    __Require_noErr_Quiet(SecTrustCreateWithCertificates(tempCertificates, policy, &allowedTrust), _out);
+    __Require_noErr_Quiet(SecTrustCreateWithCertificates(tempCertificates, policy, &allowedTrust), _out); // SecTrustCreateWithCertificates 只会接收数组作为参数
     __Require_noErr_Quiet(SecTrustEvaluate(allowedTrust, &result), _out);
 
+    /**
+     *  5、获取公钥
+        __bridge_transfer 会将结果桥接成 NSObject 对象，然后将 SecTrustCopyPublicKey 返回的指针释放。
+     */
     allowedPublicKey = (__bridge_transfer id)SecTrustCopyPublicKey(allowedTrust);
 
 _out:
+    /**
+     *  6、释放各种 C 语言指针
+     */
     if (allowedTrust) {
         CFRelease(allowedTrust);
     }
@@ -100,11 +126,18 @@ _out:
     return isValid;
 }
 
+/**
+ *  每一个 SecTrustRef 的对象都是包含多个 SecCertificateRef 和 SecPolicyRef。其中 SecCertificateRef 可以使用 DER 进行表示，并且其中存储着公钥信息。
+ */
 static NSArray * AFCertificateTrustChainForServerTrust(SecTrustRef serverTrust) {
     CFIndex certificateCount = SecTrustGetCertificateCount(serverTrust);
     NSMutableArray *trustChain = [NSMutableArray arrayWithCapacity:(NSUInteger)certificateCount];
 
     for (CFIndex i = 0; i < certificateCount; i++) {
+        /**
+         *  SecTrustGetCertificateAtIndex 获取 SecTrustRef 中的证书
+            SecCertificateCopyData 从证书中或者 DER 表示的数据
+         */
         SecCertificateRef certificate = SecTrustGetCertificateAtIndex(serverTrust, i);
         [trustChain addObject:(__bridge_transfer NSData *)SecCertificateCopyData(certificate)];
     }
@@ -145,6 +178,7 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
 
     return [NSArray arrayWithArray:trustChain];
 }
+#pragma mark 操作 SecTrustRef
 
 #pragma mark -
 
