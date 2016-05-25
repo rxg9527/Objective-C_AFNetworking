@@ -243,6 +243,10 @@ static void *AFHTTPRequestSerializerObserverContext = &AFHTTPRequestSerializerOb
     }];
     [self setValue:[acceptLanguagesComponents componentsJoinedByString:@", "] forHTTPHeaderField:@"Accept-Language"];
 
+    /**
+     *  设置一些我们平时常用的头部字段，首先是 User-Agent
+        在 AFHTTPRequestSerializer 刚刚初始化时，就会根据当前编译的平台生成一个 userAgent 字符串
+     */
     NSString *userAgent = nil;
 #if TARGET_OS_IOS
     // User-Agent Header; see http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.43
@@ -325,8 +329,10 @@ static void *AFHTTPRequestSerializerObserverContext = &AFHTTPRequestSerializerOb
     [self didChangeValueForKey:NSStringFromSelector(@selector(timeoutInterval))];
 }
 
-#pragma mark -
-
+#pragma mark - 设置 HTTP 头部字段
+/**
+ *  当真正使用时，会用 HTTPRequestHeaders 这个方法，来获取对应版本的不可变字典。
+ */
 - (NSDictionary *)HTTPRequestHeaders {
     NSDictionary __block *value;
     dispatch_sync(self.requestHeaderModificationQueue, ^{
@@ -335,10 +341,16 @@ static void *AFHTTPRequestSerializerObserverContext = &AFHTTPRequestSerializerOb
     return value;
 }
 
+/**
+ *  设置 HTTP 头部，实现都是基于一个名为 mutableHTTPRequestHeaders 的属性
+ */
 - (void)setValue:(NSString *)value
 forHTTPHeaderField:(NSString *)field
 {
     dispatch_barrier_async(self.requestHeaderModificationQueue, ^{
+        /**
+         *  在设置 HTTP 头部字段时，都会存储到这个可变字典 mutableHTTPRequestHeaders 中
+         */
         [self.mutableHTTPRequestHeaders setValue:value forKey:field];
     });
 }
@@ -351,6 +363,9 @@ forHTTPHeaderField:(NSString *)field
     return value;
 }
 
+/**
+ *  设置验证字段时，可以使用该方法
+ */
 - (void)setAuthorizationHeaderFieldWithUsername:(NSString *)username
                                        password:(NSString *)password
 {
