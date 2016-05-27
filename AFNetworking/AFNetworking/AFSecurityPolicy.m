@@ -274,10 +274,19 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
 }
 
 #pragma mark -
-
+/**
+ *  验证服务端是否受信任
+    #1: 不能隐式地信任自己签发的证书
+    #2: 设置 policy
+    #3: 验证证书是否有效
+    #4: 根据 SSLPinningMode 对服务端进行验证
+ */
 - (BOOL)evaluateServerTrust:(SecTrustRef)serverTrust
                   forDomain:(NSString *)domain
 {
+    /**
+     *  1: 不能隐式地信任自己签发的证书
+     */
     if (domain && self.allowInvalidCertificates && self.validatesDomainName && (self.SSLPinningMode == AFSSLPinningModeNone || [self.pinnedCertificates count] == 0)) {
         // https://developer.apple.com/library/mac/documentation/NetworkingInternet/Conceptual/NetworkingTopics/Articles/OverridingSSLChainValidationCorrectly.html
         //  According to the docs, you should only trust your provided certs for evaluation.
@@ -291,6 +300,10 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
         return NO;
     }
 
+    /**
+     *  2: 设置 policy
+        如果要验证域名的话，就以域名为参数创建一个 SecPolicyRef，否则会创建一个符合 X509 标准的默认 SecPolicyRef 对象
+     */
     NSMutableArray *policies = [NSMutableArray array];
     if (self.validatesDomainName) {
         [policies addObject:(__bridge_transfer id)SecPolicyCreateSSL(true, (__bridge CFStringRef)domain)];
@@ -300,30 +313,51 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
 
     SecTrustSetPolicies(serverTrust, (__bridge CFArrayRef)policies);
 
+    /**
+     *  3: 验证证书是否有效
+        如果只根据信任列表中的证书进行验证，即 self.SSLPinningMode == AFSSLPinningModeNone。如果允许无效的证书的就会直接返回 YES。不允许就会对服务端信任进行验证
+        如果服务器信任无效，并且不允许无效证书，就会返回 NO
+     */
     if (self.SSLPinningMode == AFSSLPinningModeNone) {
         return self.allowInvalidCertificates || AFServerTrustIsValid(serverTrust);
     } else if (!AFServerTrustIsValid(serverTrust) && !self.allowInvalidCertificates) {
         return NO;
     }
 
+    /**
+     *  4: 根据 SSLPinningMode 对服务端进行验证
+     */
     switch (self.SSLPinningMode) {
-        case AFSSLPinningModeNone:
+        case AFSSLPinningModeNone: // AFSSLPinningModeNone 直接返回 NO
         default:
             return NO;
         case AFSSLPinningModeCertificate: {
+            /**
+             *  从 self.pinnedCertificates 中获取 DER 表示的数据
+                使用 SecTrustSetAnchorCertificates 为服务器信任设置证书
+                判断服务器信任的有效性
+                使用 AFCertificateTrustChainForServerTrust 获取服务器信任中的全部 DER 表示的证书
+                如果 pinnedCertificates 中有相同的证书，就会返回 YES
+             */
+            // 1:从 self.pinnedCertificates 中获取 DER 表示的数据
             NSMutableArray *pinnedCertificates = [NSMutableArray array];
             for (NSData *certificateData in self.pinnedCertificates) {
                 [pinnedCertificates addObject:(__bridge_transfer id)SecCertificateCreateWithData(NULL, (__bridge CFDataRef)certificateData)];
             }
+            
+            // 2:使用 SecTrustSetAnchorCertificates 为服务器信任设置证书
             SecTrustSetAnchorCertificates(serverTrust, (__bridge CFArrayRef)pinnedCertificates);
-
+            
+            // 3:判断服务器信任的有效性
             if (!AFServerTrustIsValid(serverTrust)) {
                 return NO;
             }
 
+            // 4:使用 AFCertificateTrustChainForServerTrust 获取服务器信任中的全部 DER 表示的证书
             // obtain the chain after being validated, which *should* contain the pinned certificate in the last position (if it's the Root CA)
             NSArray *serverCertificates = AFCertificateTrustChainForServerTrust(serverTrust);
             
+            // 5:如果 pinnedCertificates 中有相同的证书，就会返回 YES
             for (NSData *trustChainCertificate in [serverCertificates reverseObjectEnumerator]) {
                 if ([self.pinnedCertificates containsObject:trustChainCertificate]) {
                     return YES;
@@ -333,6 +367,11 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
             return NO;
         }
         case AFSSLPinningModePublicKey: {
+            /**
+             *  这部分的实现和上面的差不多，区别有两点
+                    1:会从服务器信任中获取公钥
+                    2:pinnedPublicKeys 中的公钥与服务器信任中的公钥相同的数量大于 0，就会返回真
+             */
             NSUInteger trustedPublicKeyCount = 0;
             NSArray *publicKeys = AFPublicKeyTrustChainForServerTrust(serverTrust);
 
