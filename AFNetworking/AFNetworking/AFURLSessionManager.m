@@ -462,7 +462,7 @@ static NSString * const AFNSURLSessionTaskDidSuspendNotification = @"com.alamofi
         Class currentClass = [localDataTask class];
         
         /**
-         *  4、如果当前类 currentClass 有 resume 方法，
+         *  4、如果当前类 currentClass(localDataTask) 有 resume 方法，
             5、使用 swizzleResumeAndSuspendMethodForClass: 调剂该类的 resume 和 suspend 方法
             6、如果没有 resume 方法，则 currentClass = [currentClass superclass];
             这里复杂的实现是为了解决 bug #2702
