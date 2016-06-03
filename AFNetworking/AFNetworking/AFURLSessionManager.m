@@ -1060,6 +1060,9 @@ didBecomeInvalidWithError:(NSError *)error
     [[NSNotificationCenter defaultCenter] postNotificationName:AFURLSessionDidInvalidateNotification object:session];
 }
 
+/**
+ *  收到连接层的验证请求时
+ */
 - (void)URLSession:(NSURLSession *)session
 didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
  completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential))completionHandler
@@ -1070,7 +1073,9 @@ didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
     if (self.sessionDidReceiveAuthenticationChallenge) {
         disposition = self.sessionDidReceiveAuthenticationChallenge(session, challenge, &credential);
     } else {
-        
+        /**
+         *  如果没有传入 taskDidReceiveAuthenticationChallenge block，只有在 - [AFSecurityPolicy evaluateServerTrust:forDomain:] 返回 YES 时，才会获得认证凭证 credential。
+         */
         if ([challenge.protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust]) {
             if ([self.securityPolicy evaluateServerTrust:challenge.protectionSpace.serverTrust forDomain:challenge.protectionSpace.host]) {
                 credential = [NSURLCredential credentialForTrust:challenge.protectionSpace.serverTrust];
@@ -1112,6 +1117,7 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
 }
 
 /**
+ *  任务接收到验证请求时
  *  NSURLAuthenticationChallenge 表示一个认证的挑战，提供了关于这次认证的全部信息。它有一个非常重要的属性 protectionSpace，这里保存了需要认证的保护空间, 每一个 NSURLProtectionSpace 对象都保存了主机地址，端口和认证方法等重要信息。
  */
 - (void)URLSession:(NSURLSession *)session
