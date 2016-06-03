@@ -110,10 +110,10 @@ NSString * AFPercentEscapedStringFromString(NSString *string) {
  *  会返回 key=value 这种格式
  */
 - (NSString *)URLEncodedStringValue {
+    /**
+     *  对 field 和 value 进行处理，将其中的 :#[]@!$&'()*+,;= 等字符转换为百分号表示的形式
+     */
     if (!self.value || [self.value isEqual:[NSNull null]]) {
-        /**
-         *  对 field 和 value 进行处理，将其中的 :#[]@!$&'()*+,;= 等字符转换为百分号表示的形式
-         */
         return AFPercentEscapedStringFromString([self.field description]);
     } else {
         return [NSString stringWithFormat:@"%@=%@", AFPercentEscapedStringFromString([self.field description]), AFPercentEscapedStringFromString([self.value description])];
