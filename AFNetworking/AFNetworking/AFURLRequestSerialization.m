@@ -177,7 +177,7 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
      *  最后返回一个数组
      
      [
-     username=draveness,
+     username=helloworld,
      password=123456,
      hello[world]=helloworld
      ]
