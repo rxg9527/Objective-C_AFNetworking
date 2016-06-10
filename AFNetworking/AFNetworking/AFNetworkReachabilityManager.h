@@ -42,6 +42,19 @@ NS_ASSUME_NONNULL_BEGIN
 
  @warning Instances of `AFNetworkReachabilityManager` must be started with `-startMonitoring` before reachability status can be determined.
  */
+/**
+ *  
+ 其实这个类与 AFNetworking 整个框架并没有太多的耦合。正相反，它在整个框架中作为一个即插即用的类使用，每一个 AFURLSessionManager 都会持有一个 AFNetworkReachabilityManager 的实例。
+ 
+ self.reachabilityManager = [AFNetworkReachabilityManager sharedManager];
+ 这是整个框架中除了 AFNetworkReachabilityManager.h/m 文件，唯一一个引用到这个类的地方。
+ 
+ 在实际的使用中，我们也可以直接操作 AFURLSessionManager 的 reachabilityManager 来获取当前的网络可达性状态，而不是自己手动初始化一个实例，当然这么做也是没有任何问题的。
+ 
+1、 AFNetworkReachabilityManager 实际上只是一个对底层 SystemConfiguration 库中的 C 函数封装的类，它为我们隐藏了 C 语言的实现，提供了统一的 Objective-C 语言接口
+2、 它是 AFNetworking 中一个即插即用的模块
+
+ */
 @interface AFNetworkReachabilityManager : NSObject
 
 /**
@@ -113,6 +126,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  Starts monitoring for changes in network reachability status.
+ 在初始化 AFNetworkReachabilityManager 后，会调用 startMonitoring 方法开始监控网络状态。
  */
 - (void)startMonitoring;
 
