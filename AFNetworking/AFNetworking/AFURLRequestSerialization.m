@@ -225,6 +225,9 @@ static void *AFHTTPRequestSerializerObserverContext = &AFHTTPRequestSerializerOb
     return [[self alloc] init];
 }
 
+/**
+ *  AFHTTPRequestSerializer 会在 AHHTTPSessionManager 初始化时一并初始化，这时它会根据当前系统环境预设置一些 HTTP 头部字段 Accept-Language User-Agent。
+ */
 - (instancetype)init {
     self = [super init];
     if (!self) {
