@@ -51,6 +51,7 @@ static BOOL AFSecKeyIsEqualToKey(SecKeyRef key1, SecKeyRef key2) {
 #pragma mark - 操作 SecTrustRef
 /**
  *  对证书进行操作，返回一个公钥
+ *  对 serverTrust 的操作的函数基本上都是 C 的 API，都定义在 Security 模块中
  */
 static id AFPublicKeyForCertificate(NSData *certificate) {
     /**
@@ -259,6 +260,7 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
         NSMutableSet *mutablePinnedPublicKeys = [NSMutableSet setWithCapacity:[self.pinnedCertificates count]];
         for (NSData *certificate in self.pinnedCertificates) {
             /**
+             *  操作 SecTrustRef
              *  在这里调用了 AFPublicKeyForCertificate 对证书进行操作，返回一个公钥
              */
             id publicKey = AFPublicKeyForCertificate(certificate);
@@ -296,6 +298,7 @@ static NSArray * AFPublicKeyTrustChainForServerTrust(SecTrustRef serverTrust) {
         //  From Apple Docs:
         //          "Do not implicitly trust self-signed certificates as anchors (kSecTrustOptionImplicitAnchors).
         //           Instead, add your own (self-signed) CA certificate to the list of trusted anchors."
+        //          所以如果没有提供证书或者不验证证书，并且还设置 allowInvalidCertificates 为真，满足上面的所有条件，说明这次的验证是不安全的，会直接返回 NO
         NSLog(@"In order to validate a domain name for self signed certificates, you MUST use pinning.");
         return NO;
     }
